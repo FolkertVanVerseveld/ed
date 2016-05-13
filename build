@@ -1,0 +1,84 @@
+#!/bin/bash -e
+# Simple script that creates a Makefile for all c++ files that contain a main function
+CC=gcc
+cstd='-std=c89'
+CFLAGS="-Wall -Wextra -pedantic $cstd -O3 -ffast-math -g $*"
+INCS=
+cat <<END >.gitignore
+# Created by build script. Modifications are lost when rerun.
+.gitignore
+Makefile
+*.tmp
+# VIM
+*.swp
+*.vim
+# CC
+*.o
+END
+CFLAGS="$CFLAGS $INCS"
+CM="$CC $cstd -MM"
+# Write phony target and overwrite some builtin variables
+cat <<END >Makefile
+.PHONY: default clean
+
+CC?=$CC
+CFLAGS=$CFLAGS
+LDLIBS=$LDLIBS
+
+END
+
+printf "MAIN=" >>Makefile
+# Filter Binary.* and strip extensions
+MAIN="`grep -r 'int \
+main(int' | sed -e '/Binary.*/d' -e 's/\(.*\):.*/\1/g'`"
+# Write elf executables
+for i in $MAIN; do
+	printf " %s" "${i/%.*/}" >>Makefile
+	printf "\n%s" "${i/%.*/}" >>.gitignore
+done
+# Write object files
+printf '\nOBJECTS=' >>Makefile
+OBJECTS=
+SRC="$(find . -name "*.c")"
+for i in $SRC; do
+	o="${i/.\//}"
+	o="${o/%.*/.o}"
+	printf ' \\\n\t%s' "$o" >>Makefile
+	OBJECTS="$OBJECTS $o"
+done
+# Write elf recipes
+printf '\ndefault: $(OBJECTS) $(MAIN)\n' >>Makefile
+for i in $MAIN; do
+	bin="${i/%.*/}"
+	m="$($CM $INCS "${i/.\//}" | sed -e 's/.*://g')"
+	obj="${i/%.c/.o}"
+	if [ -e "$obj" ]; then
+		printf '%s: %s' "$bin" "$obj" >>Makefile
+	else
+		printf '%s:' "$bin" >>Makefile
+	fi
+	obj=
+	if grep 'build-test' "$i"; then
+		for j in $m; do
+			if [ -e "${j/%.*/.c}" ]; then
+				o="${j/%.*/.o}"
+				obj="$obj $o"
+				printf " %s" "$o" >>Makefile
+			fi
+		done
+		printf '\n\t$(CC) %s -o %s\n' "$obj $LDLIBS $LLIBS" "$bin" >>Makefile
+	else
+		printf '\n\t$(CC) $(OBJECTS) %s -o %s\n' "$LDLIBS $LLIBS" "$bin" >>Makefile
+	fi
+done
+# Write dependencies
+for i in $SRC; do
+	j="${i/.\//}"
+	$CM $INCS "$j" >>Makefile
+done
+# Write clean up
+cat <<END >>Makefile
+
+clean:
+	rm -f \$(MAIN) \$(OBJECTS)
+END
