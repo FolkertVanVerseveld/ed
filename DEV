@@ -1,0 +1,2 @@
+BUFSZ memmory mapped block size for peeks and pokes
+NPEEK printed peek byte count

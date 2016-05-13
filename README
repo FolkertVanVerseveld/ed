@@ -1,0 +1,51 @@
+Minimalistic line based hex editor
+provides minimal error checking
+
+Works for files up to at least the maximum value of off_t,
+which is usually either a 32 bit signed integer (i.e. 2GB)
+or 64 bit (i.e. 8EB).
+This program primarly uses functionality provided by POSIX,
+and therefore should work on POSIX-compatible systems.
+
+-- FEATURES --
+
+* POSIX only
+* Compiles with c89
+* Buffers small blocks rather than reading the whole file
+
+Yes, the last item seems silly, but *A LOT* hex editors will read the whole file.
+This is just stupid because this makes it very slow (or the editor just crashes)
+when you need to poke a couple of bytes in a 40GB+ file.
+
+-- HOW TO USE --
+
+Addressing memory:
+Memory can be addressed by providing the hexadecimal address.
+Note that all these addresses are absolute!
+Bytes that are not currently buffered are printed as `~~'.
+Bytes that are beyond the file size are printed as `??'.
+
+Inspecting memory:
+You can inspect memory by providing the hexadecimal address.
+For example, `deadface' will report 16 bytes at location 0xdeadface.
+
+Modifying memory:
+You can modify memory by specifying the bytes that need to be poked at the specified address.
+For example, `fa ce' will poke 0xce at 0xfa.
+Note: modifications are immediately written to the file!
+
+Resizing file:
+You can increase or decrease the file size by specifying the new size in hexadecimal suffixed with `s'.
+For example, 100s will resize the file to 0x100 bytes.
+
+Quit the editor:
+You can close the editor by typing `q'.
+
+-- LIMITATIONS --
+
+Since the program is very simple by design, it lacks lots of features from most hex editors.
+Some include:
+* Pokes are immediately written to the file
+* All numbers are interpreted as hexadecimal (base 16) numbers.
+* No undo/redo history
+* No insert/delete
